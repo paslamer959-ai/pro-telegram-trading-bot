@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Pro v2</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background: #0f172a; color: white; padding-bottom: 80px; }
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s; }
+        .active-page { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .stat-card { background: #1e293b; border-radius: 15px; padding: 20px; border: 1px solid #334155; margin-bottom: 15px; text-align: center; }
+        .val { font-size: 1.5rem; font-weight: bold; color: #3b82f6; display: block; }
+        .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; display: flex; border-top: 1px solid #334155; padding: 10px 0; }
+        .nav-item { flex: 1; text-align: center; color: #94a3b8; cursor: pointer; font-size: 0.8rem; }
+        .nav-item.active { color: #3b82f6; font-weight: bold; }
+        .form-control, .form-select { background: #1e293b !important; color: white !important; border: 1px solid #334155 !important; margin-bottom: 15px; padding: 12px; }
+    </style>
+</head>
+<body>
+
+    <div id="home" class="page active-page">
+        <h4 class="mb-4">📊 مراقبة الحساب</h4>
+        <div class="stat-card">
+            <small class="text-secondary">الرصيد المتاح</small>
+            <span id="bal" class="val">0.00 USDT</span>
+        </div>
+        <div class="row g-2">
+            <div class="col-6"><div class="stat-card"><small>الأرباح</small><span id="pnl" class="val text-success">0.00%</span></div></div>
+            <div class="col-6"><div class="stat-card"><small>حالة السوق</small><span id="status" class="val" style="font-size: 1rem;">جاري الفحص</span></div></div>
+        </div>
+    </div>
+
+    <div id="settings" class="page">
+        <h4 class="mb-4">⚙️ الإعدادات</h4>
+        <select id="exch" class="form-select"><option value="bingx">BingX (VST)</option></select>
+        <input type="password" id="key" class="form-control" placeholder="API Key">
+        <input type="password" id="sec" class="form-control" placeholder="API Secret">
+        <input type="text" id="sym" class="form-control" placeholder="BTC/USDT">
+        <input type="number" id="amt" class="form-control" placeholder="المبلغ لكل صفقة">
+        <button class="btn btn-primary w-100 py-3" onclick="save()">حفظ وتشغيل 🚀</button>
+    </div>
+
+    <div class="nav-bottom">
+        <div class="nav-item active" id="btn-home" onclick="showPage('home')">🏠<br>الرئيسية</div>
+        <div class="nav-item" id="btn-settings" onclick="showPage('settings')">⚙️<br>الإعدادات</div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        function showPage(p) {
+            document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
+            document.querySelectorAll('.nav-item').forEach(nv => nv.classList.remove('active'));
+            document.getElementById(p).classList.add('active-page');
+            document.getElementById('btn-' + p).classList.add('active');
+        }
+
+        async function update() {
+            const id = tg.initDataUnsafe.user.id;
+            const res = await fetch(`/get-status/${id}`);
+            const data = await res.json();
+            document.getElementById('bal').innerText = data.balance + " USDT";
+            document.getElementById('status').innerText = data.status;
+            document.getElementById('pnl').innerText = data.pnl + "%";
+            if(!document.getElementById('key').value && data.apiKey) {
+                document.getElementById('key').value = data.apiKey;
+                document.getElementById('sym').value = data.symbol;
+                document.getElementById('amt').value = data.amount;
+            }
+        }
+
+        async function save() {
+            const data = {
+                telegramId: tg.initDataUnsafe.user.id.toString(),
+                apiKey: document.getElementById('key').value,
+                apiSecret: document.getElementById('sec').value,
+                symbol: document.getElementById('sym').value.toUpperCase(),
+                amount: parseFloat(document.getElementById('amt').value),
+                exchangeId: document.getElementById('exch').value,
+                active: true
+            };
+            await fetch('/save-config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            tg.showScanQrPopup({text: "تم الحفظ بنجاح!"});
+            showPage('home');
+        }
+
+        setInterval(update, 5000);
+        update();
+    </script>
+</body>
+</html>
