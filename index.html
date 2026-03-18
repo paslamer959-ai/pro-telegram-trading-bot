@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading OS - بوت التداول الذكي</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { 
+            background: #0b0e11; 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            padding-bottom: 80px; 
+        }
+        .page { 
+            display: none; 
+            padding: 15px; 
+        }
+        .active-page { 
+            display: block; 
+        }
+        .card-custom { 
+            background: #1e2329; 
+            border: 1px solid #2b3139; 
+            border-radius: 12px; 
+            padding: 15px; 
+            margin-bottom: 10px; 
+        }
+        .signal-buy { 
+            color: #02c076; 
+            font-weight: bold; 
+        }
+        .signal-sell { 
+            color: #f84960; 
+            font-weight: bold; 
+        }
+        .signal-wait { 
+            color: #f0b90b; 
+            font-weight: bold; 
+        }
+        .progress { 
+            height: 6px; 
+            background: #2b3139; 
+        }
+        .nav-bar { 
+            position: fixed; 
+            bottom: 0; 
+            width: 100%; 
+            background: #1e2329; 
+            display: flex; 
+            padding: 10px 0; 
+            border-top: 1px solid #2b3139; 
+        }
+        .nav-btn { 
+            flex: 1; 
+            text-align: center; 
+            color: #848e9c; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
+        }
+        .nav-btn.active { 
+            color: #f0b90b; 
+        }
+        .btn-action { 
+            background: #f0b90b; 
+            color: black; 
+            border: none; 
+            font-weight: bold; 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 8px; 
+        }
+        .btn-action:hover {
+            background: #d6a40a;
+        }
+        input, select { 
+            background: #2b3139 !important; 
+            border: 1px solid #474d57 !important; 
+            color: white !important; 
+            margin-bottom: 10px; 
+        }
+        input::placeholder {
+            color: #848e9c !important;
+        }
+        .badge-running {
+            background: #02c076;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .badge-stopped {
+            background: #f84960;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- الصفحة الرئيسية -->
+    <div id="page-home" class="page active-page">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>📈 رادار السوق</h5>
+            <span id="bot-status-badge" class="badge-stopped">⏸️ متوقف</span>
+        </div>
+        <div id="market-list">
+            <div class="text-center text-secondary">جاري تحميل البيانات...</div>
+        </div>
+    </div>
+
+    <!-- صفحة التشغيل -->
+    <div id="page-run" class="page">
+        <h5 class="mb-3">🚀 تشغيل البوت</h5>
+        <div class="card-custom">
+            <label class="small text-secondary">اختر العملة</label>
+            <select id="run-sym" class="form-control mt-1">
+                <option value="BTC/USDT">BTC/USDT</option>
+                <option value="ETH/USDT">ETH/USDT</option>
+                <option value="SOL/USDT">SOL/USDT</option>
+                <option value="AR/USDT">AR/USDT</option>
+                <option value="BNB/USDT">BNB/USDT</option>
+            </select>
+            
+            <label class="small text-secondary mt-2">رصيد التداول (USDT)</label>
+            <input type="number" id="run-amt" class="form-control" placeholder="أدخل المبلغ" min="10" step="1">
+            
+            <button class="btn-action mt-2" onclick="startBot()">بدء التداول الآن</button>
+        </div>
+        
+        <div class="card-custom">
+            <div class="d-flex justify-content-between">
+                <span class="text-secondary">حالة البوت</span>
+                <span id="bot-status-text">⏸️ متوقف</span>
+            </div>
+            <div class="d-flex justify-content-between mt-2">
+                <span class="text-secondary">الزوج النشط</span>
+                <span id="active-symbol">BTC/USDT</span>
+            </div>
+        </div>
+        
+        <div class="card-custom text-center">
+            <div class="text-secondary small">أرباح البوت الحالية</div>
+            <div id="bot-pnl" class="h3 mt-1 text-success">0.00 USDT</div>
+        </div>
+    </div>
+
+    <!-- صفحة الإعدادات -->
+    <div id="page-set" class="page">
+        <h5 class="mb-3">⚙️ الإعدادات</h5>
+        <div class="card-custom">
+            <label class="small text-secondary">مفتاح API (API Key)</label>
+            <input type="password" id="set-key" class="form-control" placeholder="أدخل مفتاح API">
+            
+            <label class="small text-secondary mt-2">المفتاح السري (API Secret)</label>
+            <input type="password" id="set-sec" class="form-control" placeholder="أدخل المفتاح السري">
+            
+            <p class="small text-secondary mt-2">⚠️ المفاتيح مشفرة وآمنة</p>
+            
+            <button class="btn-action" onclick="saveKeys()">💾 حفظ المفاتيح</button>
+        </div>
+        
+        <div class="card-custom">
+            <h6>📌 تعليمات الحصول على المفاتيح:</h6>
+            <ol class="small text-secondary">
+                <li>سجل في BingX</li>
+                <li>اذهب إلى API Management</li>
+                <li>أنشئ مفتاح جديد مع صلاحية التداول</li>
+                <li>انسخ المفاتيح والصقها هنا</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- شريط التنقل السفلي -->
+    <nav class="nav-bar">
+        <div class="nav-btn active" onclick="nav('home', this)">📊 السوق</div>
+        <div class="nav-btn" onclick="nav('run', this)">⚡ التشغيل</div>
+        <div class="nav-btn" onclick="nav('set', this)">⚙️ الإعدادات</div>
+    </nav>
+
+    <script>
+        // تهيئة تطبيق تيليجرام
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        
+        // الحصول على معرف المستخدم
+        const uid = tg.initDataUnsafe?.user?.id;
+        
+        // إذا لم يتم العثور على معرف المستخدم، استخدم معرف تجريبي (للتطوير)
+        if (!uid) {
+            console.warn('⚠️ لم يتم العثور على معرف المستخدم، استخدم معرف تجريبي');
+        }
+
+        // دالة التنقل بين الصفحات
+        function nav(page, element) {
+            // إخفاء جميع الصفحات
+            document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
+            // إظهار الصفحة المحددة
+            document.getElementById('page-' + page).classList.add('active-page');
+            
+            // تحديث الأزرار النشطة
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            if (element) element.classList.add('active');
+        }
+
+        // تحميل بيانات السوق
+        async function loadMarket() {
+            try {
+                const res = await fetch(`/api/market-scan/${uid || 'test'}`);
+                const data = await res.json();
+                
+                // تحديث حالة البوت
+                updateBotStatus(data.isRunning);
+                
+                let html = '';
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(r => {
+                        const isUp = parseFloat(r.change) > 0;
+                        const signalClass = r.signal === 'BUY' ? 'signal-buy' : (r.signal === 'SELL' ? 'signal-sell' : 'signal-wait');
+                        
+                        html += `
+                        <div class="card-custom">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>${r.symbol}</strong> ${isUp ? '🔼' : '🔽'}</span>
+                                <span class="${isUp ? 'text-success' : 'text-danger'}">$${r.price}</span>
+                            </div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar ${isUp ? 'bg-success' : 'bg-danger'}" style="width: ${Math.min(Math.abs(parseFloat(r.change)) * 2, 100)}%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2 small">
+                                <span class="${signalClass}">🚦 ${r.signal}</span>
+                                <span>📊 RSI: ${r.rsi}</span>
+                                <span class="${isUp ? 'text-success' : 'text-danger'}">${r.change}%</span>
+                            </div>
+                        </div>`;
+                    });
+                } else {
+                    html = '<div class="text-center text-secondary">لا توجد بيانات متاحة</div>';
+                }
+                
+                document.getElementById('market-list').innerHTML = html;
+                document.getElementById('bot-pnl').innerText = (data.balance || 0) + ' USDT';
+                
+            } catch (error) {
+                console.error('خطأ في تحميل البيانات:', error);
+                document.getElementById('market-list').innerHTML = '<div class="text-center text-danger">❌ خطأ في تحميل البيانات</div>';
+            }
+        }
+
+        // تحديث حالة البوت في الواجهة
+        function updateBotStatus(isRunning) {
+            const badge = document.getElementById('bot-status-badge');
+            const statusText = document.getElementById('bot-status-text');
+            
+            if (isRunning) {
+                badge.className = 'badge-running';
+                badge.innerHTML = '✅ يعمل';
+                if (statusText) statusText.innerHTML = '✅ يعمل';
+            } else {
+                badge.className = 'badge-stopped';
+                badge.innerHTML = '⏸️ متوقف';
+                if (statusText) statusText.innerHTML = '⏸️ متوقف';
+            }
+        }
+
+        // حفظ مفاتيح API
+        async function saveKeys() {
+            const apiKey = document.getElementById('set-key').value.trim();
+            const apiSecret = document.getElementById('set-sec').value.trim();
+            
+            if (!apiKey || !apiSecret) {
+                tg.showAlert('❌ الرجاء إدخال جميع المفاتيح');
+                return;
+            }
+            
+            if (!uid) {
+                tg.showAlert('❌ خطأ في معرف المستخدم');
+                return;
+            }
+            
+            try {
+                const body = { 
+                    telegramId: uid.toString(), 
+                    apiKey: apiKey, 
+                    apiSecret: apiSecret 
+                };
+                
+                const res = await fetch('/api/save-keys', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify(body) 
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    tg.showAlert("✅ تم حفظ المفاتيح بنجاح!");
+                    // تفريغ الحقول
+                    document.getElementById('set-key').value = '';
+                    document.getElementById('set-sec').value = '';
+                } else {
+                    tg.showAlert("❌ فشل حفظ المفاتيح");
+                }
+            } catch (error) {
+                tg.showAlert("❌ خطأ في الاتصال");
+                console.error(error);
+            }
+        }
+
+        // بدء تشغيل البوت
+        async function startBot() {
+            const symbol = document.getElementById('run-sym').value;
+            const amount = document.getElementById('run-amt').value;
+            
+            if (!amount || amount <= 0) {
+                tg.showAlert('❌ الرجاء إدخال مبلغ صحيح');
+                return;
+            }
+            
+            if (!uid) {
+                tg.showAlert('❌ خطأ في معرف المستخدم');
+                return;
+            }
+            
+            try {
+                const body = { 
+                    telegramId: uid.toString(), 
+                    symbol: symbol, 
+                    amount: parseFloat(amount) 
+                };
+                
+                const res = await fetch('/api/start-bot', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify(body) 
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    tg.showAlert(`🚀 تم تشغيل البوت على ${symbol} بمبلغ ${amount} USDT`);
+                    updateBotStatus(true);
+                    document.getElementById('active-symbol').innerText = symbol;
+                    nav('home', document.querySelector('.nav-btn'));
+                } else {
+                    tg.showAlert("❌ فشل تشغيل البوت");
+                }
+            } catch (error) {
+                tg.showAlert("❌ خطأ في الاتصال");
+                console.error(error);
+            }
+        }
+
+        // تحميل البيانات كل 10 ثواني
+        setInterval(loadMarket, 10000);
+        
+        // تحميل البيانات عند بدء التشغيل
+        loadMarket();
+        
+        // تحميل بيانات المستخدم
+        async function loadUserData() {
+            if (!uid) return;
+            
+            try {
+                const res = await fetch(`/api/user-data/${uid}`);
+                const data = await res.json();
+                
+                if (data.isRunning !== undefined) {
+                    updateBotStatus(data.isRunning);
+                }
+                
+                if (data.activeSymbol) {
+                    document.getElementById('active-symbol').innerText = data.activeSymbol;
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل بيانات المستخدم:', error);
+            }
+        }
+        
+        loadUserData();
+    </script>
+</body>
+</html>
