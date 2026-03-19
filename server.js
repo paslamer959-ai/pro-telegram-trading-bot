@@ -623,7 +623,7 @@ async function openNewTrade(user, symbol, entryPrice, sma, exchange) {
         const usdtBalance = balance.USDT?.free || 0;
         const amount = Math.min(user.tradeAmount || 10, usdtBalance);
         
-        if (amount >= 5) {
+        if (amount >= 1) {
             const order = await exchange.createMarketBuyOrder(
                 symbol,
                 amount / entryPrice
