@@ -8,7 +8,7 @@ module.exports = {
     MONGO_URL: "mongodb+srv://qais:qais959@cluster0.ggc3dpc.mongodb.net/TradingPro?retryWrites=true&w=majority",
     
     // رابط التطبيق
-    WEBAPP_URL: "https://pro-telegram-trading-bot.onrender.com",
+    WEBAPP_URL: "https://pro-telegram-trading-bot-1.onrender.com/",
     
     // اسم المستخدم
     BOT_USERNAME: "Trading_Pro_bot",
