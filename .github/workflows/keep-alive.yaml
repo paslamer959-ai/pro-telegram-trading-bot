@@ -1,0 +1,40 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # تشغيل كل 10 دقائق
+    - cron: '*/10 * * * *'
+  
+  # يسمح بالتشغيل اليدوي
+  workflow_dispatch:
+
+jobs:
+  ping-server:
+    name: Ping Render Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Send ping to Render
+        run: |
+          echo "🔄 Pinging Render server at $(date)"
+          echo "-----------------------------------"
+          
+          # Ping الصفحة الرئيسية
+          echo "Pinging main page..."
+          curl -I https://trading-os-bot.onrender.com
+          echo ""
+          
+          # Ping مسار الصحة
+          echo "Pinging health endpoint..."
+          curl -I https://trading-os-bot.onrender.com/health
+          echo ""
+          
+          echo "✅ Ping completed at $(date)"
+          echo "-----------------------------------"
+      
+      - name: Log activity
+        run: |
+          echo "✅ Server pinged at $(date)" >> ping_history.log
