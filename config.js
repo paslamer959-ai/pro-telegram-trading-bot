@@ -11,7 +11,7 @@ module.exports = {
     WEBAPP_URL: "https://pro-telegram-trading-bot.onrender.com/",
     
     // اسم المستخدم
-    BOT_USERNAME: "Trading_Pro_bot",
+    BOT_USERNAME: "Trading_Pro66_bot",
     
     // قناة الدعم
     SUPPORT_CHAT: "https://t.me/RealGainsOnly",
