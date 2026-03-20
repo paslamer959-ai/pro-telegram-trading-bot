@@ -2,8 +2,8 @@ name: Keep Render Alive
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # كل 10 دقائق
-  workflow_dispatch:  # يسمح بالتشغيل اليدوي
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
 
 jobs:
   ping:
@@ -18,12 +18,12 @@ jobs:
           
           # Ping الصفحة الرئيسية
           echo "Pinging main page..."
-          curl -I https://trading-os-bot.onrender.com
+          curl -I https://pro-telegram-trading-bot.onrender.com
           echo ""
           
           # Ping مسار الصحة
           echo "Pinging health endpoint..."
-          curl -I https://trading-os-bot.onrender.com/health
+          curl -I https://pro-telegram-trading-bot.onrender.com/health
           echo ""
           
           echo "✅ Ping completed at $(date)"
