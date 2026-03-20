@@ -141,7 +141,7 @@ const mainKeyboard = {
     reply_markup: {
         keyboard: [
             [
-                { text: "🚀 فتح البوت", web_app: { url: config.web_app: { url: config.WEBAPP_URL } },
+                { text: "🚀 فتح البوت", web_app:{ url: config.WEBAPP_URL } },
                 { text: "📊 السوق" }
             ],
             [
