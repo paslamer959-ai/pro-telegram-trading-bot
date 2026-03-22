@@ -567,7 +567,7 @@ async function findNewTradeOpportunity(user, exchange) {
     
     for (const symbol of favoriteSymbols) {
         try {
-            const ohlcv = await exchange.fetchOHLCV(symbol, '1m', undefined, 25);
+            const ohlcv = await exchange.fetchOHLCV(symbol, '1m', undefined, 50);
             if (ohlcv.length < 12) continue;
             const prices = ohlcv.map(c => c[4]);
             const volumes = ohlcv.map(c => c[5]);
